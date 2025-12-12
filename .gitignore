@@ -1,0 +1,29 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Models and data artifacts (keep large binaries out of Git)
+models/*.pkl
+MHEALTHDATASET/*.zip
+MHEALTHDATASET/*.log
+MHEALTHDATASET.zip
+
+# Node/Frontend
+my-frontend/node_modules/
+my-frontend/dist/
+my-frontend/.vite/
+my-frontend/.cache/
+
+# OS/Editor
+.DS_Store
+Thumbs.db
+.vscode/
