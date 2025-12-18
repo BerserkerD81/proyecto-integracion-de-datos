@@ -13,9 +13,12 @@ __pycache__/
 
 # Models and data artifacts (keep large binaries out of Git)
 models/*.pkl
+backend/models/*.pkl
+backend/models/*.joblib
 MHEALTHDATASET/*.zip
 MHEALTHDATASET/*.log
 MHEALTHDATASET.zip
+windows_features.*
 
 # Node/Frontend
 my-frontend/node_modules/
