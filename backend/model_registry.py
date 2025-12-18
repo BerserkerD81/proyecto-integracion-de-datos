@@ -102,6 +102,29 @@ def list_models() -> List[Dict[str, str]]:
     return items
 
 
+def _is_lfs_pointer(path: Path) -> bool:
+    """Detect if a file is a Git LFS pointer instead of the real content."""
+    try:
+        with open(path, "rb") as f:
+            head = f.read(256)
+        try:
+            text = head.decode("utf-8", errors="ignore")
+        except Exception:
+            return False
+        return text.startswith("version https://git-lfs.github.com/spec/v1")
+    except Exception:
+        return False
+
+
+def _load_joblib_or_hint_lfs(path: Path):
+    """Load a joblib artifact, but emit a helpful error if it's an LFS pointer."""
+    if _is_lfs_pointer(path):
+        raise RuntimeError(
+            f"El archivo '{path.name}' parece ser un puntero de Git LFS. Ejecuta 'git lfs pull' en la raíz del repo para descargar el contenido real, o vuelve a clonar con LFS habilitado."
+        )
+    return joblib.load(path)
+
+
 def load_artifacts(name: Optional[str] = None):
     """Load model and scaler for a given name. If name is None, use env BACKEND_MODEL_NAME
     or fallback to the first available model.
@@ -114,15 +137,15 @@ def load_artifacts(name: Optional[str] = None):
         s_path = next((p for p in scaler_candidates(target) if p.exists()), None)
         if not s_path:
             raise FileNotFoundError(f"Scaler file not found for name '{target}'. Place it under {MODEL_DIR}.")
-        model = joblib.load(m_path)
-        scaler = joblib.load(s_path)
+        model = _load_joblib_or_hint_lfs(m_path)
+        scaler = _load_joblib_or_hint_lfs(s_path)
         return target, model, scaler, m_path, s_path
 
     # No explicit target: prefer common default names, else first found in directory
-    # Prefer HistGradientBoosting first (nuevo comportamiento por defecto),
-    # luego Random Forest para mantener compatibilidad.
+    # Prefer HistGradientBoosting si existe, luego RandomForest, luego legados
     preferred = [
         "HistGradientBoosting",
+        "RandomForest",
         "random_forest_rf",
         "random_forest",
     ]
@@ -132,16 +155,16 @@ def load_artifacts(name: Optional[str] = None):
             sp = next((p for p in scaler_candidates(pref) if p.exists()), None)
             if not sp:
                 break
-            model = joblib.load(mp)
-            scaler = joblib.load(sp)
+            model = _load_joblib_or_hint_lfs(mp)
+            scaler = _load_joblib_or_hint_lfs(sp)
             return pref, model, scaler, mp, sp
 
     models = list_models()
     if not models:
         raise FileNotFoundError(f"No models found under {MODEL_DIR}. Export them from the notebook.")
     first = models[0]
-    model = joblib.load(Path(first["model"]))
-    scaler = joblib.load(Path(first["scaler"])) if first.get("scaler") else None
+    model = _load_joblib_or_hint_lfs(Path(first["model"]))
+    scaler = _load_joblib_or_hint_lfs(Path(first["scaler"])) if first.get("scaler") else None
     return first["name"], model, scaler, Path(first["model"]), Path(first.get("scaler") or "")
 
 
