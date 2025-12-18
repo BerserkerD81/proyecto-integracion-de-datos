@@ -119,8 +119,10 @@ def load_artifacts(name: Optional[str] = None):
         return target, model, scaler, m_path, s_path
 
     # No explicit target: prefer common default names, else first found in directory
-    # Prefer random_forest if available to match prior behavior
+    # Prefer HistGradientBoosting first (nuevo comportamiento por defecto),
+    # luego Random Forest para mantener compatibilidad.
     preferred = [
+        "HistGradientBoosting",
         "random_forest_rf",
         "random_forest",
     ]
